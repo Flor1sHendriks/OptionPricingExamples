@@ -1,8 +1,10 @@
 from math import exp, log, sqrt
 from statistics import NormalDist
-
+import csv
+from pathlib import Path
 # from https://www.quantstart.com/articles/European-Vanilla-Call-Put-Option-Pricing-with-Python/
 
+csv_location = Path.cwd().parent.joinpath("option_examples.csv")
 
 class EuropeanOption:
     def __init__(
@@ -29,13 +31,13 @@ class EuropeanOption:
         if option_type not in ["call", "put"]:
             raise ValueError("Option type not supported.")
 
-        self.type = option_type
-        self.s = price
-        self.k = strike
-        self.r = interest_rate
-        self.v = volatility
-        self.t = time_to_maturity
-        self.amount_underlying = amount_underlying
+        self.type = str(option_type)
+        self.s = float(price)
+        self.k = float(strike)
+        self.r = float(interest_rate)
+        self.v = float(volatility)
+        self.t = int(time_to_maturity)
+        self.amount_underlying = int(amount_underlying)
 
     @property
     def value(self) -> float:
@@ -60,7 +62,45 @@ class EuropeanOption:
         return value * self.amount_underlying
 
 
-if __name__ == "__main__":
+def generate_examples():
+    strike = 0.9
+    sigma = 0.2
+    r = 0.015
+    price = 1
+    time_to_maturity = 1
+    amount_underlying = 1
+
+    list_of_options = [
+        {
+            "option_type": "call",
+            "price": price,
+            "strike": strike,
+            "interest_rate": r,
+            "volatility": sigma,
+            "time_to_maturity": time_to_maturity,
+            "amount_underlying": amount_underlying,
+        }
+        for _ in range(1_000_000)
+    ]
+
+    with open(csv_location, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            (
+                "option_type",
+                "price",
+                "strike",
+                "interest_rate",
+                "volatility",
+                "time_to_maturity",
+                "amount_underlying",
+            )
+        )
+
+        for row in list_of_options:
+            writer.writerows([list(row.values())])
+
+def test_main():
     strike = 0.9
     sigma = 0.2
     r = 0.015
@@ -91,5 +131,18 @@ if __name__ == "__main__":
     assert c_0 == 0.14498531543284665
     assert p_0 == 0.3722123939103649
 
+    print("values are as expected")
+
+
+if __name__ == "__main__":
+
+    with open(csv_location, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        list_of_options = [dict(row) for row in reader]
+
+    for option in list_of_options:
+        c_0 = EuropeanOption(**option).value
+
     print(c_0)
-    print(p_0)
+
+    test_main()

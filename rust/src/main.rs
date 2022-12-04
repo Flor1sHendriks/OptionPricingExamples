@@ -1,7 +1,11 @@
+
 use statrs::distribution::{ContinuousCDF, Normal};
+use std::env;
+use std::path::Path;
+use std::str::FromStr;
 
 struct EuropeanOption {
-    option_type: &'static str,
+    option_type: String,
     price: f64,
     strike: f64,
     interest_rate: f64,
@@ -37,7 +41,7 @@ impl EuropeanOption {
     }
 }
 
-fn main() {
+fn test_european_option() {
     let strike: f64 = 0.9;
     let sigma: f64 = 0.2;
     let r: f64 = 0.015;
@@ -46,7 +50,8 @@ fn main() {
     let amount_underlying: i8 = 1;
 
     let call_option = EuropeanOption {
-        option_type: "call",
+        option_type: String::from_str("call").unwrap(),
+
         price,
         strike,
         interest_rate: r,
@@ -58,7 +63,7 @@ fn main() {
     let c_0 = call_option.value();
 
     let put_option = EuropeanOption {
-        option_type: "put",
+        option_type: String::from_str("put").unwrap(),
         price,
         strike,
         interest_rate: r,
@@ -72,6 +77,52 @@ fn main() {
     assert_eq!(c_0, 0.14498531543284654);
     assert_eq!(p_0, 0.37221239391036487);
 
+    println!("values are as expected");
+}
+
+fn main() {
+    let current_dir = env::current_dir().unwrap();
+
+    let csv_folder = Path::new(&current_dir).parent().unwrap();
+
+    let csv_location = csv_folder.join("option_examples.csv");
+
+    let mut reader = csv::Reader::from_path(&csv_location).unwrap();
+
+    let mut list_of_options = Vec::new();
+
+    for record in reader.records() {
+        let record = record.unwrap();
+
+        // serialize
+        let option_type = String::from_str(&record[0]).unwrap();
+        let price: f64 = record[1].parse::<f64>().unwrap();
+        let strike = record[2].parse::<f64>().unwrap();
+        let interest_rate = record[3].parse::<f64>().unwrap();
+        let volatility = record[4].parse::<f64>().unwrap();
+        let time_to_maturity = record[5].parse::<i8>().unwrap();
+        let amount_underlying = record[6].parse::<i8>().unwrap();
+
+        let call_option = EuropeanOption {
+            option_type,
+            price,
+            strike,
+            interest_rate,
+            volatility,
+            time_to_maturity,
+            amount_underlying,
+        };
+
+        list_of_options.push(call_option);
+    }
+
+    // initialisation necessary otherwise c_0 is not available after the loop.
+    let mut c_0=  1.0;
+    for option in list_of_options {
+        c_0 = option.value();
+    }
+
     println!("{c_0}");
-    println!("{p_0}");
+
+    test_european_option();
 }
