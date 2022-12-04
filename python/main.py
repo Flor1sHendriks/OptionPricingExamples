@@ -38,30 +38,24 @@ class EuropeanOption:
         self.amount_underlying = amount_underlying
 
     @property
-    def d1(self) -> float:
-        numerator = log(self.s / self.k) + (self.r + self.v**2 / 2) * self.t
-        denominator = self.v * sqrt(self.t)
-        return numerator / denominator
-
-    @property
-    def d2(self) -> float:
-        numerator = log(self.s / self.k) + (self.r - self.v**2 / 2) * self.t
-        denominator = self.v * sqrt(self.t)
-        return numerator / denominator
-
-    @property
     def value(self) -> float:
 
         norm = NormalDist(mu=0.0, sigma=1.0)
+        d1 = (log(self.s / self.k) + (self.r + self.v**2 / 2) * self.t) / (
+            self.v * sqrt(self.t)
+        )
+        d2 = (log(self.s / self.k) + (self.r - self.v**2 / 2) * self.t) / (
+            self.v * sqrt(self.t)
+        )
 
         if self.type == "call":
-            value = self.s * norm.cdf(self.d1) - self.k * exp(
-                -self.r * self.t
-            ) * norm.cdf(self.d2)
+            value = self.s * norm.cdf(d1) - self.k * exp(-self.r * self.t) * norm.cdf(
+                d2
+            )
         else:
-            value = -self.s * norm.cdf(-self.d1) + self.k * exp(
-                -self.r * self.t
-            ) * norm.cdf(self.d2)
+            value = -self.s * norm.cdf(-d1) + self.k * exp(-self.r * self.t) * norm.cdf(
+                d2
+            )
 
         return value * self.amount_underlying
 
@@ -69,33 +63,33 @@ class EuropeanOption:
 if __name__ == "__main__":
     strike = 0.9
     sigma = 0.2
-    mu = 0.06
     r = 0.015
-    S0 = 1
-    t = 1
+    price = 1
+    time_to_maturity = 1
+    amount_underlying = 1
 
-    C0 = EuropeanOption(
+    c_0 = EuropeanOption(
         option_type="call",
-        price=S0,
+        price=price,
         strike=strike,
         interest_rate=r,
         volatility=sigma,
-        time_to_maturity=t,
-        amount_underlying=1,
+        time_to_maturity=time_to_maturity,
+        amount_underlying=amount_underlying,
     ).value
 
-    P0 = EuropeanOption(
+    p_0 = EuropeanOption(
         option_type="put",
-        price=S0,
+        price=price,
         strike=strike,
         interest_rate=r,
         volatility=sigma,
-        time_to_maturity=t,
-        amount_underlying=1,
+        time_to_maturity=time_to_maturity,
+        amount_underlying=amount_underlying,
     ).value
 
-    assert C0 == 0.14498531543284665
-    assert P0 == 0.3722123939103649
+    assert c_0 == 0.14498531543284665
+    assert p_0 == 0.3722123939103649
 
-    print(C0)
-    print(P0)
+    print(c_0)
+    print(p_0)

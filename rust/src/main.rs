@@ -1,33 +1,77 @@
-fn main() {
+use statrs::distribution::{ContinuousCDF, Normal};
 
-    let amount_underlying: i8 = 100;
-    let strike: f64 = 1.1;
+struct EuropeanOption {
+    option_type: &'static str,
+    price: f64,
+    strike: f64,
+    interest_rate: f64,
+    volatility: f64,
+    time_to_maturity: i8,
+    amount_underlying: i8,
+}
+
+impl EuropeanOption {
+    fn value(&self) -> f64 {
+        let t: f64 = self.time_to_maturity as f64;
+        let amount_underlying: f64 = self.amount_underlying as f64;
+
+        let normal_distribution = Normal::new(0.0, 1.0).unwrap();
+
+        let d1 = ((self.price / self.strike).ln()
+            + (self.interest_rate + self.volatility.powf(2.0) / 2.0))
+            / (self.volatility * t.sqrt());
+
+        let d2 = ((self.price / self.strike).ln()
+            + (self.interest_rate - self.volatility.powf(2.0) / 2.0))
+            / (self.volatility * t.sqrt());
+
+        let value: f64 = if self.option_type == "call" {
+            self.price * normal_distribution.cdf(d1)
+                - self.strike * (-self.interest_rate * t).exp() * normal_distribution.cdf(d2)
+        } else {
+            -self.price * normal_distribution.cdf(-d1)
+                + self.strike * (-self.interest_rate * t).exp() * normal_distribution.cdf(d2)
+        };
+
+        value * amount_underlying
+    }
+}
+
+fn main() {
+    let strike: f64 = 0.9;
     let sigma: f64 = 0.2;
-    let mu: f64 = 0.06;
     let r: f64 = 0.015;
-    let s_0: i8 = 1;
-    let t: i8 = 1;
-    let c_0 = call_value(amount_underlying, sigma, strike, t, r, s_0);
+    let price: f64 = 1.0;
+    let time_to_maturity: i8 = 1;
+    let amount_underlying: i8 = 1;
+
+    let call_option = EuropeanOption {
+        option_type: "call",
+        price,
+        strike,
+        interest_rate: r,
+        volatility: sigma,
+        time_to_maturity,
+        amount_underlying,
+    };
+
+    let c_0 = call_option.value();
+
+    let put_option = EuropeanOption {
+        option_type: "put",
+        price,
+        strike,
+        interest_rate: r,
+        volatility: sigma,
+        time_to_maturity,
+        amount_underlying,
+    };
+
+    let p_0 = put_option.value();
+
+    assert_eq!(c_0, 0.14498531543284654);
+    assert_eq!(p_0, 0.37221239391036487);
 
     println!("{c_0}");
-}
-
-// https://hackernoon.com/lets-graph-simple-moving-averages-using-rust
-// https://hackernoon.com/rusts-ownership-and-borrowing-enforce-memory-safety
-
-fn call_value(amount_underlying: i8, sigma: f64, strike: f64, t: i8, r: f64, s_0: i8) -> f64 {
-
-    let d_1 = fun_d1(sigma, k, t, r, s_0);
-    let d_2 = fun_d2(sigma, k, t, r, s_0);
-    let temp = norm_cdf(d1) * x - norm_cdf(d2) * k * exp(-r * t);
-
-    return amount_underlying * temp
-}
-
-fn fun_d1() {
-
-}
-
-fn fun_d2() {
-    
+    println!("{p_0}");
 }

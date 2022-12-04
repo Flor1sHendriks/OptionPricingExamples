@@ -13,3 +13,5 @@ Cargo.lock
 */.venv
 
 .DS_Store
+
+launch.json
