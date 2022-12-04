@@ -8,3 +8,4 @@ authors = ["Your Name <you@example.com>"]
 
 [dependencies]
 statrs="0.15.0"
+csv="1.1.6"
